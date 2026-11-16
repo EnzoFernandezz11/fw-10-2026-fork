@@ -1,0 +1,198 @@
+Archive member included to satisfy reference by file (symbol)
+
+/opt/riscv/lib/gcc/riscv64-unknown-elf/16.1.0/rv32i/ilp32/libgcc.a(div.o)
+                              /tmp/ccHOKsn2.o (__udivsi3)
+
+Merging object attributes
+
+
+Discarded input sections
+
+ .text          0x00000000        0x0 /tmp/cciGtguC.o
+ .data          0x00000000        0x0 /tmp/cciGtguC.o
+ .bss           0x00000000        0x0 /tmp/cciGtguC.o
+ .data          0x00000000        0x0 /tmp/ccHOKsn2.o
+ .bss           0x00000000        0x0 /tmp/ccHOKsn2.o
+ .text          0x00000000        0x0 /tmp/ccOz9JjY.o
+ .data          0x00000000        0x0 /tmp/ccOz9JjY.o
+ .bss           0x00000000        0x0 /tmp/ccOz9JjY.o
+ .data          0x00000000        0x0 /opt/riscv/lib/gcc/riscv64-unknown-elf/16.1.0/rv32i/ilp32/libgcc.a(div.o)
+ .bss           0x00000000        0x0 /opt/riscv/lib/gcc/riscv64-unknown-elf/16.1.0/rv32i/ilp32/libgcc.a(div.o)
+
+Memory Configuration
+
+Name             Origin             Length             Attributes
+BL_ROM           0x00000000         0x00001000         xr
+APP_ROM          0x00001000         0x0001f000         xr
+RAM              0x00020000         0x00020000         xrw
+*default*        0x00000000         0xffffffff
+
+Linker script and memory map
+
+LOAD /tmp/cciGtguC.o
+LOAD /tmp/ccHOKsn2.o
+LOAD /tmp/ccOz9JjY.o
+LOAD /opt/riscv/lib/gcc/riscv64-unknown-elf/16.1.0/rv32i/ilp32/libgcc.a
+
+.text           0x00001000      0x454
+                0x00001000                        __fw_start = .
+ *(.fw_header)
+ .fw_header     0x00001000       0x18 /tmp/cciGtguC.o
+                0x00001000                __fw_header
+ *(.text .text.*)
+ .text.Reset_Handler
+                0x00001018       0x74 /tmp/cciGtguC.o
+                0x00001018                Reset_Handler
+ .text          0x0000108c      0x1e0 /tmp/ccHOKsn2.o
+                0x000010e4                print_chr
+                0x00001128                print_str
+                0x00001158                print_dec
+                0x000011f8                print_hex
+                0x00001268                print_flush_buffer
+ .text.startup  0x0000126c       0xec /tmp/ccOz9JjY.o
+                0x0000126c                main
+ .text          0x00001358       0xb4 /opt/riscv/lib/gcc/riscv64-unknown-elf/16.1.0/rv32i/ilp32/libgcc.a(div.o)
+                0x00001358                __divsi3
+                0x00001360                __hidden___udivsi3
+                0x00001360                __udivsi3
+                0x000013a8                __umodsi3
+                0x000013dc                __modsi3
+ *(.rodata .rodata.*)
+ .rodata.str1.4
+                0x0000140c       0x45 /tmp/ccHOKsn2.o
+                                 0x11 (size before relaxing)
+ .rodata.str1.4
+                0x00001451        0x0 /tmp/ccOz9JjY.o
+                                 0x31 (size before relaxing)
+ *(.srodata .srodata.*)
+                0x00001454                        . = ALIGN (0x4)
+ *fill*         0x00001451        0x3 
+
+.rela.dyn       0x00001454        0x0
+ .rela.fw_header
+                0x00001454        0x0 /tmp/cciGtguC.o
+ .rela.text.Reset_Handler
+                0x00001454        0x0 /tmp/cciGtguC.o
+
+.data           0x00020000        0x0 load address 0x00001454
+                0x00020000                        _sdata = .
+ *(.data .data.*)
+ *(.sdata .sdata.*)
+                0x00020000                        . = ALIGN (0x4)
+                0x00020000                        _edata = .
+                0x00001454                        _sidata = LOADADDR (.data)
+
+.bss            0x00020000        0xc load address 0x00001454
+                0x00020000                        _sbss = .
+ *(.bss .bss.*)
+ *(.sbss .sbss.*)
+ .sbss          0x00020000        0xc /tmp/ccOz9JjY.o
+                0x00020000                int_2
+                0x00020004                int_1
+                0x00020008                int_0
+ *(COMMON)
+                0x0002000c                        . = ALIGN (0x4)
+                0x0002000c                        _ebss = .
+
+/DISCARD/
+ *(.eh_frame .eh_frame_hdr)
+                0x00001454                        __fw_end = (LOADADDR (.data) + SIZEOF (.data))
+                0x00000454                        __fw_size = (__fw_end - __fw_start)
+                0x00040000                        _stack_top = (ORIGIN (RAM) + LENGTH (RAM))
+                0x00000001                        ASSERT ((_ebss <= (_stack_top - 0x400)), No queda 1 KiB de RAM para el stack)
+OUTPUT(build/app.elf elf32-littleriscv)
+
+.riscv.attributes
+                0x00000000       0x1c
+ .riscv.attributes
+                0x00000000       0x1a /tmp/cciGtguC.o
+ .riscv.attributes
+                0x0000001a       0x1c /tmp/ccHOKsn2.o
+ .riscv.attributes
+                0x00000036       0x1c /tmp/ccOz9JjY.o
+ .riscv.attributes
+                0x00000052       0x1a /opt/riscv/lib/gcc/riscv64-unknown-elf/16.1.0/rv32i/ilp32/libgcc.a(div.o)
+
+.comment        0x00000000       0x19
+ .comment       0x00000000       0x19 /tmp/ccHOKsn2.o
+                                 0x1a (size before relaxing)
+ .comment       0x00000019        0x0 /tmp/ccOz9JjY.o
+                                 0x1a (size before relaxing)
+
+.note.GNU-stack
+                0x00000000        0x0
+ .note.GNU-stack
+                0x00000000        0x0 /tmp/ccHOKsn2.o
+ .note.GNU-stack
+                0x00000000        0x0 /tmp/ccOz9JjY.o
+
+.debug_line     0x00000000      0x7d3
+ .debug_line    0x00000000       0xce /tmp/cciGtguC.o
+ .debug_line    0x000000ce      0x45e /tmp/ccHOKsn2.o
+ .debug_line    0x0000052c      0x154 /tmp/ccOz9JjY.o
+ .debug_line    0x00000680      0x153 /opt/riscv/lib/gcc/riscv64-unknown-elf/16.1.0/rv32i/ilp32/libgcc.a(div.o)
+
+.debug_line_str
+                0x00000000      0x167
+ .debug_line_str
+                0x00000000      0x167 /tmp/cciGtguC.o
+                                 0x48 (size before relaxing)
+ .debug_line_str
+                0x00000167        0x0 /tmp/ccHOKsn2.o
+                                 0x5d (size before relaxing)
+ .debug_line_str
+                0x00000167        0x0 /tmp/ccOz9JjY.o
+                                 0x85 (size before relaxing)
+ .debug_line_str
+                0x00000167        0x0 /opt/riscv/lib/gcc/riscv64-unknown-elf/16.1.0/rv32i/ilp32/libgcc.a(div.o)
+                                 0xb4 (size before relaxing)
+
+.debug_info     0x00000000      0x520
+ .debug_info    0x00000000       0x31 /tmp/cciGtguC.o
+ .debug_info    0x00000031      0x382 /tmp/ccHOKsn2.o
+ .debug_info    0x000003b3      0x10e /tmp/ccOz9JjY.o
+ .debug_info    0x000004c1       0x5f /opt/riscv/lib/gcc/riscv64-unknown-elf/16.1.0/rv32i/ilp32/libgcc.a(div.o)
+
+.debug_abbrev   0x00000000      0x306
+ .debug_abbrev  0x00000000       0x28 /tmp/cciGtguC.o
+ .debug_abbrev  0x00000028      0x1e7 /tmp/ccHOKsn2.o
+ .debug_abbrev  0x0000020f       0xcf /tmp/ccOz9JjY.o
+ .debug_abbrev  0x000002de       0x28 /opt/riscv/lib/gcc/riscv64-unknown-elf/16.1.0/rv32i/ilp32/libgcc.a(div.o)
+
+.debug_aranges  0x00000000       0x80
+ .debug_aranges
+                0x00000000       0x20 /tmp/cciGtguC.o
+ .debug_aranges
+                0x00000020       0x20 /tmp/ccHOKsn2.o
+ .debug_aranges
+                0x00000040       0x20 /tmp/ccOz9JjY.o
+ .debug_aranges
+                0x00000060       0x20 /opt/riscv/lib/gcc/riscv64-unknown-elf/16.1.0/rv32i/ilp32/libgcc.a(div.o)
+
+.debug_str      0x00000000      0x227
+ .debug_str     0x00000000      0x227 /tmp/cciGtguC.o
+                                 0x62 (size before relaxing)
+ .debug_str     0x00000227        0x0 /tmp/ccHOKsn2.o
+                                 0xf3 (size before relaxing)
+ .debug_str     0x00000227        0x0 /tmp/ccOz9JjY.o
+                                 0x9f (size before relaxing)
+ .debug_str     0x00000227        0x0 /opt/riscv/lib/gcc/riscv64-unknown-elf/16.1.0/rv32i/ilp32/libgcc.a(div.o)
+                                 0xf9 (size before relaxing)
+
+.debug_loclists
+                0x00000000      0x2b9
+ .debug_loclists
+                0x00000000      0x297 /tmp/ccHOKsn2.o
+ .debug_loclists
+                0x00000297       0x22 /tmp/ccOz9JjY.o
+
+.debug_rnglists
+                0x00000000       0x30
+ .debug_rnglists
+                0x00000000       0x1c /tmp/ccHOKsn2.o
+ .debug_rnglists
+                0x0000001c       0x14 /tmp/ccOz9JjY.o
+
+.debug_frame    0x00000000       0xdc
+ .debug_frame   0x00000000       0x98 /tmp/ccHOKsn2.o
+ .debug_frame   0x00000098       0x44 /tmp/ccOz9JjY.o

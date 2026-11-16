@@ -2,7 +2,6 @@
  * app_startup.S — TP4 (Bloque 4): arranque del FW cuando corre detrás del BL.
  * Reemplaza a ../startup.S (que no se toca).
  *
- * COMPLETAR los TODO (hito 4).
  */
 #include "fw_image.h"
 
@@ -17,17 +16,12 @@
     .globl  __fw_header
     .type   __fw_header, @object
 __fw_header:
-    /* TODO: los 6 campos de fw_image.h, en orden (.word = 4 bytes en RISC-V).
-     *   0x00 magic, 0x04 load_addr, 0x08 image_size, 0x0C image_crc,
-     *   0x10 initial_sp, 0x14 reset_handler.
-     *   ¿Cuáles salen de símbolos del linker? ¿Qué valor ponen en image_crc,
-     *   si lo escribe tools/mkimage.py DESPUÉS de linkear? */
-    .word   0                       /* 0x00 magic          (TODO) */
-    .word   0                       /* 0x04 load_addr      (TODO) */
-    .word   0                       /* 0x08 image_size     (TODO) */
-    .word   0                       /* 0x0C image_crc      (TODO) */
-    .word   0                       /* 0x10 initial_sp     (TODO) */
-    .word   0                       /* 0x14 reset_handler  (TODO) */
+    .word   FW_IMAGE_MAGIC          /* 0x00 magic */
+    .word   __fw_start              /* 0x04 load_addr */
+    .word   __fw_size               /* 0x08 image_size */
+    .word   FW_IMAGE_CRC_UNSET      /* 0x0C CRC calculado por mkimage.py */
+    .word   _stack_top              /* 0x10 initial_sp */
+    .word   Reset_Handler           /* 0x14 reset_handler */
     .size   __fw_header, . - __fw_header
 
 /* ------------------------------------------------------------------------ */
@@ -38,14 +32,40 @@ __fw_header:
     .globl  Reset_Handler
     .type   Reset_Handler, @function
 Reset_Handler:
-    /* TODO:
-     *   1) sp = _stack_top. ¿Hace falta si el BL ya lo cargó desde la vector table?
-     *   2) copiar .data: palabra por palabra de _sidata (LMA) a _sdata.._edata (VMA).
-     *   3) poner .bss en cero: _sbss.._ebss.
-     *   4) call main
-     *   5) si main volvió y REG_FW_STATUS no quedó en FW_STATUS_PASS: ebreak.
-     *      (¿qué pasa con la simulación si no lo hacen?)
-     */
+    la sp, _stack_top /* la -> load addres */
 
-1:  j       1b                      /* borrar al completar */
+    /* 2  */
+
+    la   t0, _sidata       /* origen: valores iniciales en APP_ROM */
+    la   t1, _sdata        /* destino: comienzo de .data en RAM */
+    la   t2, _edata        /* límite: final de .data en RAM */
+
+    copiar_data:
+        bgeu t1, t2, fin_data  /* si destino >= límite, terminar */
+        lw   t3, 0(t0)         /* leer una palabra desde el origen */
+        sw   t3, 0(t1)         /* escribirla en el destino */
+        addi t0, t0, 4         /* avanzar origen 4 bytes */
+        addi t1, t1, 4         /* avanzar destino 4 bytes */
+        j    copiar_data       /* repetir */
+
+    fin_data:
+        la   t0, _sbss
+        la   t1, _ebss
+
+    limpiar_bss:
+        bgeu t0, t1, fin_bss
+        sw   zero, 0(t0)
+        addi t0, t0, 4
+        j    limpiar_bss
+
+    fin_bss:
+        call main
+        li   t0, REG_FW_STATUS_ADDR  /* dirección del registro */
+        lw   t1, 0(t0)               /* leer su valor */
+        li   t2, FW_STATUS_PASS      /* valor esperado: 0xFF */
+        beq  t1, t2, fin_ok          /* si es 0xFF, ir al bucle */
+        ebreak                       /* si no, provocar trap */
+
+    fin_ok:
+        j    fin_ok                  /* esperar si la simulación aún no terminó */
     .size   Reset_Handler, . - Reset_Handler

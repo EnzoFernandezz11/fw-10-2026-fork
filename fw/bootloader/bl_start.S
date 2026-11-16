@@ -1,7 +1,7 @@
 /*
  * bl_start.S — TP4 (Bloque 4): vector table + arranque mínimo del BOOTLOADER
  *
- * COMPLETAR los TODO (hitos 2 y 5 de la consigna).
+ * Implementa los hitos 2 y 5 de la consigna.
  *
  * Datos de la plataforma (platform/rtl/top.v, parámetros de picorv32):
  *   - PROGADDR_RESET = 0x0000_0000: al salir de reset el core EJECUTA lo que hay ahí.
@@ -21,12 +21,11 @@
     .globl  _bl_vectors
     .type   _bl_vectors, @function
 _bl_vectors:
-    /* TODO (hito 2): la vector table.
-     *   - En 0x00 (PROGADDR_RESET): un salto a bl_reset_handler.
-     *   - En 0x10 (PROGADDR_IRQ):   un salto a bl_unexpected.
-     *   - 0x04, 0x08 y 0x0C no son vectores en PicoRV32: ¿qué conviene poner?
-     *   Pregunta: ¿por qué acá la vector table son INSTRUCCIONES y en Cortex-M
-     *   son DIRECCIONES? */
+    j bl_reset_handler    /* 0x00: el procesador arranca acá tras reset */
+    j bl_unexpected       /* 0x04: no es un vector */
+    j bl_unexpected       /* 0x08: no es un vector */
+    j bl_unexpected       /* 0x0C: no es un vector */
+    j bl_unexpected       /* 0x10: vector de IRQ */
 
     .size   _bl_vectors, . - _bl_vectors
     .option pop
@@ -38,13 +37,9 @@ _bl_vectors:
     .globl  bl_reset_handler
     .type   bl_reset_handler, @function
 bl_reset_handler:
-    /* TODO (hito 2):
-     *   1) Cargar sp con _bl_stack_top (lo define bl.ld). ¿Por qué lo tiene que
-     *      hacer el software?
-     *   2) .data/.bss del BL: si el BL no usa variables globales, no hay nada
-     *      que copiar ni poner en cero (¿cómo garantizan que no las use?).
-     *   3) Llamar a bl_main(), que no vuelve.
-     */
+    la   sp, _bl_stack_top    /* prepara la pila */
+    call bl_main              /* llama al código C del bootloader */
+
 
     j       bl_unexpected           /* si bl_main volviera (o mientras no esté hecho): FAIL */
     .size   bl_reset_handler, . - bl_reset_handler
@@ -56,12 +51,9 @@ bl_reset_handler:
     .globl  bl_jump
     .type   bl_jump, @function
 bl_jump:
-    /* TODO (hito 5): pasarle el control al FW.
-     *   - Se llama desde C: ¿en qué registros llegan sp y entry según la ABI ILP32?
-     *   - Cargar el SP que pide el FW y SALTAR a su Reset_Handler.
-     *   - Pregunta: ¿salto con link (jalr ra) o sin link (jr)? ¿Qué conviene
-     *     dejar en ra?
-     */
+     mv  sp, a0                 /* cargar la pila del firmware */
+     la  ra, bl_unexpected      /* destino ante un retorno inesperado */
+     jr  a1                     /* saltar al Reset_Handler del firmware */
 
     j       bl_unexpected
     .size   bl_jump, . - bl_jump

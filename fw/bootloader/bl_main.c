@@ -1,7 +1,7 @@
 /*
  * bl_main.c — TP4 (Bloque 4): lógica del BOOTLOADER
  *
- * COMPLETAR los TODO.
+ * Implementación del arranque y la validación de la imagen.
  *   - Hito 5: con los pasos (0) y (6) alcanza para arrancar el FW sin validar nada.
  *   - Hito 7: se agregan las validaciones (1) a (5) y bl_fail(). El CRC es tu
  *     str_crc8() del TP3: el Makefile compila la implementación local de lib/src/strutils.c.
@@ -61,15 +61,12 @@ static void bl_log_hex(const char *msg, uint32_t val)
     print_str(line);
 }
 
-/* TODO (hito 7): error -> que quede visible y que la simulación termine.
- *   - mensaje por UART (why);
- *   - REG_FW_REPORT = BL_REPORT_ERROR | code;
- *   - REG_FW_STATUS = 0xBAD;
- *   - y cortar con bl_halt() (¿por qué no alcanza con 0xBAD?). */
+
 static void __attribute__((noreturn)) bl_fail(enum bl_error code, const char *why)
 {
-    (void)code;
-    (void)why;
+    print_str(why);
+    REG_FW_REPORT = BL_REPORT_ERROR | code;
+    REG_FW_STATUS = 0xBAD;
     bl_halt();
 }
 
@@ -77,21 +74,36 @@ void bl_main(void)
 {
     const fw_image_header_t *hdr = &__fw_slot_start;    /* header + vector table del FW */
 
-    /* TODO (hito 5) (0) Avisar que el BL arrancó: REG_FW_STATUS = 0 (corriendo),
-     *                    REG_FW_REPORT = BL_REPORT_START y un mensaje por UART. */
+    REG_FW_STATUS = 0;
+    REG_FW_REPORT = BL_REPORT_START;
+    print_str("[BL] Arranco el bootloader");
 
-    /* TODO (hito 7) (1) magic == FW_IMAGE_MAGIC                       -> si no, BL_ERR_MAGIC
-     *                (2) load_addr == dirección del slot               -> si no, BL_ERR_LOAD_ADDR
-     *                (3) FW_HDR_SIZE <= image_size <= tamaño del slot  -> si no, BL_ERR_SIZE
-     *                (4) str_crc8() de [slot + FW_IMAGE_CRC_START, slot + image_size)
-     *                    == image_crc                                  -> si no, BL_ERR_CRC
-     *                (5) initial_sp dentro de la RAM y alineado a 16, reset_handler
-     *                    dentro de la imagen y alineado a 4            -> BL_ERR_SP / BL_ERR_ENTRY
-     *   Pista: la RAM está en config.h (ADDR_START_DATA, ADDR_SIZE_DATA). */
+    if (hdr->magic != FW_IMAGE_MAGIC)
+        bl_fail(BL_ERR_MAGIC, "[BL] Error: magic invalido");
 
-    /* TODO (hito 5) (6) Leer initial_sp y reset_handler de la vector table del FW
-     *                    (hdr->...), marcar BL_REPORT_JUMP y saltar con bl_jump(). */
+    if (hdr->load_addr != (uintptr_t)&__fw_slot_start)
+        bl_fail(BL_ERR_LOAD_ADDR, "[BL] Error: direccion invalida");
 
-    (void)hdr; (void)bl_log_hex;                      /* borrar al completar */
-    bl_fail(BL_ERR_MAGIC, "[BL] TODO: bl_main() sin completar");   /* borrar al completar */
+    if (hdr->image_size < FW_HDR_SIZE || hdr->image_size > (uintptr_t)__fw_slot_size)
+        bl_fail(BL_ERR_SIZE, "[BL] Error: tamano invalido");
+
+    const uint8_t *image = (const uint8_t *)hdr;
+    uint8_t crc = str_crc8(image + FW_IMAGE_CRC_START,
+                           hdr->image_size - FW_IMAGE_CRC_START);
+    if (hdr->image_crc != crc)
+        bl_fail(BL_ERR_CRC, "[BL] Error: CRC invalido");
+
+    if (hdr->initial_sp < ADDR_START_DATA ||
+        hdr->initial_sp > ADDR_START_DATA + ADDR_SIZE_DATA ||
+        (hdr->initial_sp & 15u) != 0)
+        bl_fail(BL_ERR_SP, "[BL] Error: SP invalido");
+
+    if (hdr->reset_handler < hdr->load_addr ||
+        hdr->reset_handler >= hdr->load_addr + hdr->image_size ||
+        (hdr->reset_handler & 3u) != 0)
+        bl_fail(BL_ERR_ENTRY, "[BL] Error: entrada invalida");
+
+    REG_FW_REPORT = BL_REPORT_IMG_OK;
+    REG_FW_REPORT = BL_REPORT_JUMP;
+    bl_jump(hdr->initial_sp, hdr->reset_handler);
 }
