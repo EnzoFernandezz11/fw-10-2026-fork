@@ -41,7 +41,7 @@ uint8_t uart_write_byte(char c){
 
 uint8_t uart_write_str(const char *s) {
     while (*s != '\0') {
-        uint8_t estado = uart_write_byte(uart, *s);
+        uint8_t estado = uart_write_byte(*s);
         if (estado != UART0_OK) {
             return estado;
         }

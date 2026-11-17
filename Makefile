@@ -12,7 +12,7 @@ VER_FLAGS = --binary --trace -Wno-fatal -f $(FILELIST)
 FW_DIR = fw
 FW_HEX = $(FW_DIR)/fw.hex
 
-.PHONY: all fw sim wave clean clean_sim build_project_config test_uart_serial
+.PHONY: all fw sim wave clean clean_sim build_project_config test_uart_serial test_dma_driver test_adc_driver
 
 all: build_project_config fw clean_sim sim wave
 
@@ -29,6 +29,14 @@ sim: $(FW_HEX)
 test_uart_serial:
 	$(VERILATOR) $(VER_FLAGS)
 	bash fw/tools/run_test.sh test_uart_serial PASS TARGET=test_uart_serial SRC=drivers/src/uart1.c
+
+test_dma_driver:
+	$(VERILATOR) $(VER_FLAGS)
+	bash fw/tools/run_test.sh test_dma_driver PASS TARGET=test_dma_driver SRC=drivers/src/dma.c
+
+test_adc_driver:
+	$(VERILATOR) $(VER_FLAGS)
+	bash fw/tools/run_test.sh test_adc_driver PASS TARGET=test_adc_driver SRC=drivers/src/adc.c
 
 wave:
 	gtkwave $(WAVE)
