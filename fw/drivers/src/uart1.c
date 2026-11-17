@@ -11,52 +11,67 @@
 
 void uart1_init(uint32_t baud_div)
 {
-    /* TODO hito 3.b: programar BAUD_DIV y limpiar los flags de error. */
-    (void)baud_div;
+
+    if( baud_div < 2){
+        return;
+    }
+    REG_UART1_BAUD_DIV = baud_div;
+    REG_UART1_CTRL = UART1_CTRL_CLR_ERR;
 }
 
 uint32_t uart1_rx_level(void)
 {
-    /* TODO hito 3.b: cantidad de bytes en el FIFO RX (ver STATUS). */
-    return 0;
+    return UART1_ST_RX_LEVEL(REG_UART1_STATUS);
 }
 
 int uart1_getc(uint8_t *b)
 {
-    /* TODO hito 3.b: leer RX_DATA (leer saca un byte del FIFO) y devolver 1 si el
-     * bit VALID estaba en 1. Si no, devolver 0 sin tocar *b. */
-    (void)b;
+    uint32_t dato = REG_UART1_RX_DATA;
+
+    if (dato & UART1_RX_VALID) {
+        *b = (uint8_t)dato;
+        return 1;
+    }
+
     return 0;
 }
 
 void uart1_putc(uint8_t b)
 {
-    /* TODO hito 3.b: esperar a que el FIFO TX tenga lugar y escribir TX_DATA. */
-    (void)b;
+    while (REG_UART1_STATUS & UART1_ST_TX_FULL ) { }
+    REG_UART1_TX_DATA = b;
 }
 
-void uart1_write(const uint8_t *buf, uint32_t n)
-{
-    /* TODO hito 3.b */
-    (void)buf;
-    (void)n;
+void uart1_write(const uint8_t *buf, uint32_t n){ 
+    for (uint32_t i = 0; i < n; i++) {
+        uart1_putc(buf[i]);
+    }
 }
 
 int uart1_tx_idle(void)
 {
-    /* TODO hito 3.b */
-    return 0;
+    return (REG_UART1_STATUS & UART1_ST_TX_IDLE) ? 1 : 0;
 }
 
 uint32_t uart1_errors(void)
 {
-    /* TODO hito 3.b: UART1_ERR_FRAME / UART1_ERR_OVERRUN segun el STATUS. */
-    return 0;
+    uint32_t status = REG_UART1_STATUS;
+    uint32_t errores = 0;
+
+    if (status & UART1_ST_FRAME_ERR) {
+        errores |= UART1_ERR_FRAME;
+    }
+
+    if (status & UART1_ST_OVERRUN) {
+        errores |= UART1_ERR_OVERRUN;
+    }
+
+    return errores;
 }
 
 void uart1_clear_errors(void)
 {
-    /* TODO hito 3.b: pulsar CLR_ERR en CTRL sin cambiar el estado de RTS. */
+    REG_UART1_CTRL |= UART1_CTRL_CLR_ERR;
 }
 
 /* ---- TP6 ---- */

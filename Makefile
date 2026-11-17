@@ -12,7 +12,7 @@ VER_FLAGS = --binary --trace -Wno-fatal -f $(FILELIST)
 FW_DIR = fw
 FW_HEX = $(FW_DIR)/fw.hex
 
-.PHONY: all fw sim wave clean clean_sim build_project_config
+.PHONY: all fw sim wave clean clean_sim build_project_config test_uart_serial
 
 all: build_project_config fw clean_sim sim wave
 
@@ -25,6 +25,10 @@ fw:
 sim: $(FW_HEX)
 	$(VERILATOR) $(VER_FLAGS)
 	./$(OBJ_DIR)/V$(TOP)
+
+test_uart_serial:
+	$(VERILATOR) $(VER_FLAGS)
+	bash fw/tools/run_test.sh test_uart_serial PASS TARGET=test_uart_serial SRC=drivers/src/uart1.c
 
 wave:
 	gtkwave $(WAVE)
