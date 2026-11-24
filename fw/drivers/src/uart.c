@@ -40,12 +40,18 @@ uint8_t uart_write_byte(char c){
     }
 
 uint8_t uart_write_str(const char *s) {
+    if (s == 0)
+        return UART0_ERR;
+
     while (*s != '\0') {
-        uint8_t estado = uart_write_byte(*s);
-        if (estado != UART0_OK) {
-            return estado;
-        }
-        s++;
+        uint32_t size = 0;
+        while (UART0_REGS->TRANSMISION_DONE == 0) { }
+        while (size < 256 && *s != '\0')
+            UART0_REGS->BUFF_OUT[size++] = (uint8_t)*s++;
+        UART0_REGS->SIZE_TO_TRANSMIT = size;
+        UART0_REGS->START_TRANSMIT = 1;
+        UART0_REGS->START_TRANSMIT = 0;
+        while (UART0_REGS->TRANSMISION_DONE == 0) { }
     }
     return UART0_OK;
 }

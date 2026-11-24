@@ -8,7 +8,7 @@ Se divide de esta forma pora poder organizar mejor todo , acelerar el proceso de
 
 tuve que leer el dasheet
 
-los 8 bits mas bajos son los validos de un registro para 32 , tuve que invetigar si era big o llite endian y descrubir qeu el proyecto era little
+El datasheet indica que los 8 bits menos significativos del registro de 32 bits son los válidos para los LED. También investigué el orden de bytes de la plataforma y comprobé que es little-endian.
 
 ![](/home/enzo/snap/marktext/9/.config/marktext/images/2026-11-16-17-28-17-image.png)
 

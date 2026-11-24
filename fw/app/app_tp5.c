@@ -32,7 +32,7 @@ static int procesar_mitad(uint32_t offset)
 {
     const uint32_t *origen = adc_buffer();
 
-    if (adc_read(referencia, offset + TOTAL_SAMPLES) != ADC_OK)
+    if (adc_read(referencia, offset + TOTAL_SAMPLES) != offset + TOTAL_SAMPLES)
         return 1;
 
     for (uint32_t i = 0; i < TOTAL_SAMPLES; i += DMA_BLOCK_SAMPLES) {
@@ -74,7 +74,7 @@ int main(void)
         led_on(0);
         uart_write_str("Primeras 128 muestras listas\n");
 
-        while (!adc_done()) { }
+        while (!adc_is_done()) { }
         led_off(0);
         if (procesar_mitad(TOTAL_SAMPLES) != 0)
             break;
