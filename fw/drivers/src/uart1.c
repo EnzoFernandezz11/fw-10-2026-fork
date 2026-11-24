@@ -1,18 +1,17 @@
 /* Driver de la UART1 serie.
  *
- * HITO 3.b: completar los cuerpos marcados con TODO usando los registros de
+ * Punto 3.b del TP5: completar los cuerpos marcados con TODO usando los registros de
  *         datasheets/UART1_DATASHEET.md (REG_UART1_*, definidos en config.h).
  * TP6: completar uart1_set_rts().
  *
- * Hoy los cuerpos no hacen nada (solo para que el proyecto compile): el check
- * del hito 3.b tiene que fallar hasta que los implementes.
+ * Hoy los cuerpos no hacen nada (solo para que el proyecto compile): make
+ * test_uart_serial tiene que fallar hasta que los implementes.
  */
 #include "uart1.h"
 
 void uart1_init(uint32_t baud_div)
 {
-
-    if( baud_div < 2){
+    if (baud_div < 2) {
         return;
     }
     REG_UART1_BAUD_DIV = baud_div;
@@ -38,11 +37,12 @@ int uart1_getc(uint8_t *b)
 
 void uart1_putc(uint8_t b)
 {
-    while (REG_UART1_STATUS & UART1_ST_TX_FULL ) { }
+    while (REG_UART1_STATUS & UART1_ST_TX_FULL) { }
     REG_UART1_TX_DATA = b;
 }
 
-void uart1_write(const uint8_t *buf, uint32_t n){ 
+void uart1_write(const uint8_t *buf, uint32_t n)
+{
     for (uint32_t i = 0; i < n; i++) {
         uart1_putc(buf[i]);
     }
