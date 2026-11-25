@@ -45,6 +45,6 @@ uint8_t led_get_status(uint8_t idx) {
     if (idx < 8) {
         return (REG_LED >> idx) & 0x01;
     }
-    return -1; // Invalid index
+    return LED_INVALID_STATUS;
 }
 

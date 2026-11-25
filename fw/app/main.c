@@ -1,41 +1,117 @@
-/* Hito 2: procesador de comandos sobre UART1.
- *
- * Completar segun la consigna (tps/tp6.md):
- *   - sincronizarse al flujo de bytes y detectar tramas validas (HEADER, LENGTH, CRC, FOOTER);
- *     el CRC se calcula con str_crc8() de lib/inc/strutils.h: no hay que reescribirlo
- *   - ejecutar el comando SOLO cuando la trama entera llego y es correcta
- *   - ante una trama corrupta: descartarla entera, no ejecutarla y responder el error que
- *     corresponde (ERROR_CRC, ERROR_LENGTH; ver 3.5 de la consigna)
- *   - CONTROL DE FLUJO (hito 1): frenar al host con RTS antes de cada tramo en que no se lee
- *     la UART (verificar el CRC de una trama larga, ejecutar el comando, mandar la respuesta);
- *     si no, el FIFO RX se llena y se pierden bytes (el test lo prueba con tramas largas
- *     pegadas). Despues de bajar RTS todavia pueden llegar hasta 3 bytes: bajarlo con margen
- *   - decodificar OPCODE y parametros, y ejecutar el comando con los drivers
- *   - validar direcciones ANTES de tocar el bus (consigna 3.7): una direccion invalida
- *     cuelga el core, y REG_MCU_RESET no se puede escribir. Las regiones validas estan en
- *     config.h (ADDR_START_* / ADDR_SIZE_*, generado desde project_config.def)
- *   - recuperarse de tramas incompletas (dejan de llegar bytes) sin colgarse: para medir el
- *     silencio usen clock_cycles() / clock_elapsed() de lib/inc/clock.h (consigna, 3.6)
- *
- * El diseno interno es libre. Pueden agregar modulos propios (.c y .h) en esta carpeta (app/):
- * hay que listar cada .c en fw/sources.mk (SRC += app/mi_modulo.c), igual que los drivers.
- *
- * Se prueba con (desde la raiz del repo):
- *      make test_main               compila este main, lo simula y corre fw/tests/main.txt
- *      make test_main VERBOSE=1     ademas imprime cada byte que pasa por UART1
- * Constantes del protocolo: cmd_protocol_defs.h (en esta carpeta). Driver: drivers/inc/uart1.h
- * (el del TP5; uart1_set_rts() es del hito 1).
- */
 #include "uart1.h"
 #include "cmd_protocol_defs.h"
+#include "strutils.h"
+#include "frame_parser.h"
+#include "cmd_proc.h"
+
+#define RTS_HIGH_WM  8u
+#define RTS_LOW_WM   4u
+
+static int            s_rts_on = 0;
+static frame_parser_t s_parser;
+static uint8_t        s_resp_data[CMD_MAX_RESP_DATA];
+static uint8_t        s_tx_buf[CMD_MAX_RESP_DATA + 16u];
+
+static void flow_control(void)
+{
+    uint32_t level = uart1_rx_level();
+    if (s_rts_on && level >= RTS_HIGH_WM) {
+        uart1_set_rts(0);
+        s_rts_on = 0;
+    } else if (!s_rts_on && level <= RTS_LOW_WM) {
+        uart1_set_rts(1);
+        s_rts_on = 1;
+    }
+}
+
+static void send_response(uint8_t opcode, uint8_t status, const uint8_t *data, uint16_t data_len)
+{
+    if (status != STATUS_OK) {
+        data_len = 0;
+    }
+
+    uint16_t body_len = (uint16_t)(2u + data_len);      /* OPCODE_RESP + STATUS + data */
+    uint16_t length   = (uint16_t)(body_len + 1u);      /* + CRC */
+
+    s_tx_buf[0] = PKT_HEADER_0;
+    s_tx_buf[1] = PKT_HEADER_1;
+    s_tx_buf[2] = (uint8_t)(length & 0xFFu);
+    s_tx_buf[3] = (uint8_t)((length >> 8) & 0xFFu);
+    s_tx_buf[4] = (uint8_t)(opcode | OP_RESPONSE_FLAG);
+    s_tx_buf[5] = status;
+
+    for (uint16_t i = 0; i < data_len; i++) {
+        s_tx_buf[6u + i] = data[i];
+    }
+
+    uint32_t pos = 4u + body_len;
+    s_tx_buf[pos++] = str_crc8(&s_tx_buf[4], body_len);
+    s_tx_buf[pos++] = PKT_FOOTER_0;
+    s_tx_buf[pos++] = PKT_FOOTER_1;
+
+    uart1_write(s_tx_buf, pos);
+}
+
+static void handle_parser_result(const fp_result_t *res)
+{
+    /* Frenar al host antes de calcular CRC, ejecutar comando y enviar respuesta */
+    uart1_set_rts(0);
+    s_rts_on = 0;
+
+    if (res->kind == FP_RES_FRAME_ERROR) {
+        send_response(res->opcode, res->error_status, 0, 0);
+        return;
+    }
+
+    uint8_t opcode   = res->body[0];
+    uint8_t recv_crc = res->body[res->length - 1u];
+    uint8_t calc_crc = str_crc8(res->body, res->length - 1u);
+
+    /* Si fallan CRC y FOOTER a la vez, la consigna prioriza ERROR_CRC */
+    if (calc_crc != recv_crc) {
+        send_response(opcode, STATUS_ERROR_CRC, 0, 0);
+        return;
+    }
+
+    if (!res->footer_ok) {
+        send_response(opcode, STATUS_ERROR_LENGTH, 0, 0);
+        return;
+    }
+
+    cmd_request_t req = {
+        .opcode      = opcode,
+        .payload     = &res->body[1],
+        .payload_len = (uint16_t)(res->length - 2u),
+    };
+    cmd_response_t resp = {
+        .status   = STATUS_OK,
+        .data     = s_resp_data,
+        .data_len = 0,
+    };
+
+    cmd_proc_execute(&req, &resp);
+    send_response(opcode, resp.status, resp.data, resp.data_len);
+}
 
 void main(void)
 {
     REG_FW_STATUS = 0;
     uart1_init(UART1_SIM_BAUD_DIV);
+    frame_parser_init(&s_parser);
     uart1_set_rts(1);
+    s_rts_on = 1;
 
     for (;;) {
-        /* TODO hito 2 */
+        flow_control();
+
+        uint8_t b;
+        if (uart1_getc(&b)) {
+            fp_result_t res = frame_parser_feed(&s_parser, b);
+            if (res.kind != FP_RES_IN_PROGRESS) {
+                handle_parser_result(&res);
+            }
+        } else {
+            frame_parser_check_timeout(&s_parser);
+        }
     }
 }

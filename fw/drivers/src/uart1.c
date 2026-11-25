@@ -9,11 +9,14 @@
  */
 #include "uart1.h"
 
+static uint32_t uart1_rts_on = 0;
+
 void uart1_init(uint32_t baud_div)
 {
     if (baud_div < 2) {
         return;
     }
+    uart1_rts_on = 0;
     REG_UART1_BAUD_DIV = baud_div;
     REG_UART1_CTRL = UART1_CTRL_CLR_ERR;
 }
@@ -71,13 +74,19 @@ uint32_t uart1_errors(void)
 
 void uart1_clear_errors(void)
 {
-    REG_UART1_CTRL |= UART1_CTRL_CLR_ERR;
+    REG_UART1_CTRL = uart1_rts_on | UART1_CTRL_CLR_ERR;
 }
 
 /* ---- TP6 ---- */
 
 void uart1_set_rts(int ready)
 {
-    /* TODO TP6 */
-    (void)ready;
+    if(ready){
+        uart1_rts_on = UART1_CTRL_RTS;
+        REG_UART1_CTRL = UART1_CTRL_RTS;
+    }
+    else{
+        uart1_rts_on = 0;
+        REG_UART1_CTRL = 0;
+    }
 }

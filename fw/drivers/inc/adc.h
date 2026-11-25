@@ -34,14 +34,22 @@ _Static_assert(offsetof(adc_regs_t, buffer) == 0xd4, "ADC buffer offset");
 #define ADC_OK 0
 #define ADC_ERR 1
 
-#define ADC_MODE_SINGLE    0u
-#define ADC_MODE_CIRCULAR  1u
-#define ADC_DEFAULT_DIVIDER 32u
+/* Bits de REG_ADC_START: adc_mode es el valor que se escribe ahi. */
+#define ADC_START_BIT      (1u << 0)
+#define ADC_CIRCULAR_BIT   (1u << 1)
+#define ADC_MODE_SINGLE    (ADC_START_BIT)                     /* 1: captura unica */
+#define ADC_MODE_CIRCULAR  (ADC_START_BIT | ADC_CIRCULAR_BIT)  /* 3: circular */
+
+/* Bits de REG_ADC_STATUS */
+#define ADC_STATUS_HALF_DONE (1u << 0)
+#define ADC_STATUS_ACQ_DONE  (1u << 1)
 
 uint8_t adc_init(uint32_t clk_div);
 /* Configurar antes de iniciar una captura; cero no es valido. */
 uint8_t set_adc_clk_divider(uint32_t clk_div);
+/* Escribe 0 y despues adc_mode en REG_ADC_START (flanco de inicio). */
 uint8_t adc_start(uint8_t adc_mode);
+/* Espera a que este lista la mitad de la captura y devuelve 1. */
 uint8_t adc_half_done(void);
 /* Consulta el estado sin esperar. */
 uint8_t adc_is_done(void);
@@ -49,10 +57,9 @@ uint8_t adc_is_done(void);
 uint8_t adc_done(void);
 /* Direccion del buffer de muestras para transferencias DMA. */
 const void *adc_buffer(void);
-/* Copia hasta 256 muestras disponibles y devuelve la cantidad copiada.
- * Si data es NULL o size es cero, devuelve 0. Si aun no se inicio una
- * captura, inicia una unica y espera su fin (divisor por defecto: 32).
- * Si ya se inicio, el llamador espera las muestras antes de leerlas. */
+/* Hace una captura unica completa con el divisor ya configurado (dispara,
+ * espera el fin y copia) y devuelve cuantas muestras copio: como maximo 256,
+ * y 0 si data es NULL. */
 uint32_t adc_read(uint32_t *data, uint32_t size);
 
 #endif

@@ -1,5 +1,14 @@
 #include "dma.h"
 
+/* Fin (exclusivo) de la zona mapeada: instrucciones + datos + register file.
+ * Fuera de ella el bus no responde nunca y el DMA quedaria colgado. */
+#define DMA_MAPA_FIN  ((uintptr_t)ADDR_START_REG_FILE + ADDR_SIZE_REG_FILE)
+
+/* 1 si [addr, addr + bytes) cae entero dentro de la zona mapeada (empieza en 0). */
+static int dma_rango_valido(uintptr_t addr, uintptr_t bytes)
+{
+    return addr < DMA_MAPA_FIN && bytes <= DMA_MAPA_FIN - addr;
+}
 
 uint8_t dma_init(void) {
     REG_DMA_START = 0;
@@ -17,14 +26,14 @@ uint8_t dma_copy(const void *src, void *dst, uint32_t n_words) {
     }
 
     /* No iniciar una copia vacía ni permitir que el tamaño desborde. */
-    if (n_words == 0 || n_words > UINTPTR_MAX / 4u) {
+    if (n_words == 0 || n_words > DMA_MAPA_FIN / 4u) {
         return DMA_ERR;
     }
 
     uintptr_t bytes = (uintptr_t)n_words * 4u;
 
-    /* Comprobar que los finales de los rangos no se desborden. */
-    if (origen > UINTPTR_MAX - bytes || destino > UINTPTR_MAX - bytes) {
+    /* Los dos rangos completos tienen que caer en la zona mapeada. */
+    if (!dma_rango_valido(origen, bytes) || !dma_rango_valido(destino, bytes)) {
         return DMA_ERR;
     }
 
@@ -32,14 +41,14 @@ uint8_t dma_copy(const void *src, void *dst, uint32_t n_words) {
     if (origen < destino + bytes && destino < origen + bytes) {
         return DMA_ERR;
     }
-    
+
     REG_DMA_SOURCE_ADDR = origen;
     REG_DMA_DEST_ADDR = destino;
     REG_DMA_SIZE = n_words;
 
     REG_DMA_START = 0;
     REG_DMA_START = 1;
-    
+
     while(REG_DMA_DONE == 0) {}
 
 

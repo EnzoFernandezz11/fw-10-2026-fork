@@ -27,20 +27,17 @@ static void flow_control(void)
     uint32_t level = uart1_rx_level();
 
     if (rts_on) {
-        /* TODO hito 1: si el FIFO esta cerca de llenarse, bajar RTS (uart1_set_rts(0)) y
-         * anotarlo en rts_on.
-         *
-         * Pensar con cuanto margen: despues de bajar RTS todavia pueden llegar hasta 3
-         * bytes (el que estaba en curso y 'skid' = 2), y mientras procesar_lento() corre
-         * entran hasta 3 mas. El FIFO tiene UART1_FIFO_DEPTH (16) bytes. */
-        (void)level;
+    
+        if(level >= 8){
+            uart1_set_rts(0);
+            rts_on = 0;
+        }
     } else {
-        /* TODO hito 1: si el FIFO ya se vacio lo suficiente, volver a subir RTS
-         * (uart1_set_rts(1)) y anotarlo en rts_on.
-         *
-         * Pensar: el nivel para volver a subir tiene que ser menor que el de bajar, si no
-         * RTS oscila con cada byte. */
-        (void)level;
+       
+        if(level <= 3){
+            uart1_set_rts(1);
+            rts_on = 1;
+        }
     }
 }
 
